@@ -1,11 +1,11 @@
 #!/bin/bash
 #
-# Compile script for uvite Kernel
+# Compile script for Murali Kernel
 # Copyright (C) 2020-2021 Adithya R.
 
 SECONDS=0 # builtin bash timer
-ZIPNAME="uvite-$(date '+%Y%m%d-%H%M')-spes.zip"
-TC_DIR="$(pwd)/tc/clang-r450784e"
+ZIPNAME="Linux-$(date '+%Y%m%d-%H%M')-spes.zip"
+TC_DIR="$(pwd)/tc/zyc20clang"
 AK3_DIR="$(pwd)/android/AnyKernel3"
 DEFCONFIG="vendor/spes-perf_defconfig"
 
@@ -19,11 +19,17 @@ export KBUILD_BUILD_USER=nobody
 export KBUILD_BUILD_HOST=android-build
 
 if ! [ -d "$TC_DIR" ]; then
-	echo "AOSP clang not found! Cloning to $TC_DIR..."
-	if ! git clone --depth=1 -b 14 https://gitlab.com/ThankYouMario/android_prebuilts_clang-standalone "$TC_DIR"; then
-		echo "Cloning failed! Aborting..."
-		exit 1
-	fi
+    mkdir -p "$TC_DIR"
+    echo "ZyC clang not found! Downloading to $TC_DIR..."
+    if ! wget -O clang.tar.gz https://github.com/ZyCromerZ/Clang/releases/download/20.0.0git-20250104-release/Clang-20.0.0git-20250104.tar.gz; then
+        echo "Download failed! Aborting..."
+        exit 1
+    fi
+    if ! tar -xf clang.tar.gz -C "$TC_DIR"; then
+        echo "Extraction failed! Aborting..."
+        exit 1
+    fi
+    rm clang.tar.gz
 fi
 
 if [[ $1 = "-r" || $1 = "--regen" ]]; then
@@ -45,13 +51,12 @@ if [[ $1 = "-c" || $1 = "--clean" ]]; then
 fi
 
 mkdir -p out
-make O=out ARCH=arm64 $DEFCONFIG
+make O=out ARCH=arm64 SUBARCH=arm64 $DEFCONFIG
 
 echo -e "\nStarting compilation...\n"
-make -j$(nproc --all) O=out ARCH=arm64 LLVM=1 LLVM_IAS=1 Image.gz dtb.img dtbo.img 2> >(tee log.txt >&2) || exit $?
+make -j$(nproc --all) O=out CC=clang CROSS_COMPILE=aarch64-linux-gnu- CROSS_COMPILE_ARM32=arm-linux-gnueabi- LD=ld.lld LLVM=1 LLVM_IAS=1 ARCH=arm64 SUBARCH=arm64 Image.gz-dtb dtbo.img 2> >(tee log.txt >&2) || exit $?
 
-kernel="out/arch/arm64/boot/Image.gz"
-dtb="out/arch/arm64/boot/dtb.img"
+kernel="out/arch/arm64/boot/Image.gz-dtb"
 dtbo="out/arch/arm64/boot/dtbo.img"
 
 if [ -f "$kernel" ]; then
@@ -62,7 +67,7 @@ if [ -f "$kernel" ]; then
 		echo -e "\nAnyKernel3 repo not found locally and couldn't clone from GitHub! Aborting..."
 		exit 1
 	fi
-	cp $kernel $dtb $dtbo AnyKernel3
+	cp $kernel $dtbo AnyKernel3
 	rm -rf out/arch/arm64/boot
 	cd AnyKernel3
 	git checkout master &> /dev/null
