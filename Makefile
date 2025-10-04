@@ -2,8 +2,8 @@
 VERSION = 4
 PATCHLEVEL = 19
 SUBLEVEL = 325
-EXTRAVERSION = -YogratBuilds-Beta-v0.1
-NAME = "EvolutionX Edition"
+EXTRAVERSION = -YogratBuilds-Beta-v0.2
+NAME =
 
 # *DOCUMENTATION*
 # To see a list of typical targets execute "make help"
