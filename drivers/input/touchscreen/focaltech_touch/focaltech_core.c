@@ -1712,7 +1712,8 @@ static int fts_ts_check_dt(struct device_node *np)
 		}
 	}
 
-	return -ENODEV;
+	FTS_INFO("panel specified in DT but not found, continuing without panel notifier");
+	return 0;
 }
 
 static int fts_ts_check_default_tp(struct device_node *dt, const char *prop)
